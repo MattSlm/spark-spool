@@ -6,11 +6,13 @@ set -euo pipefail
 SPARK_HOME_IN_ENCLAVE="/opt/spark"
 CONTEXT_DIR="${CONTEXT_DIR:-}"
 
-
 if [[ -z "$CONTEXT_DIR" ]]; then
     echo "❌ CONTEXT_DIR must be set!"
     exit 1
 fi
+
+# Avoid unbound variable error for SPARK_ENV_LOADED
+: "${SPARK_ENV_LOADED:=}"
 
 # Save real SPARK_HOME
 REAL_SPARK_HOME="${SPARK_HOME:-}"
@@ -25,6 +27,5 @@ export SPARK_HOME="$CONTEXT_DIR/opt/spark"
     printf "%s\n" "${CMD[@]}"
 )
 
-# Restore real SPARK_HOME afterwards (if needed)
+# Restore real SPARK_HOME afterwards
 export SPARK_HOME="$REAL_SPARK_HOME"
-
