@@ -1,35 +1,50 @@
 #!/usr/bin/env bash
-set -eo pipefail  # <=== Drop the -u flag!
+set -euo pipefail
 
-# === Wrapper to extract Spark launch command ===
+SPARK_HOME="${SPARK_HOME:-/opt/spark}"
 
-SPARK_HOME_IN_ENCLAVE="/opt/spark"
-CONTEXT_DIR="${CONTEXT_DIR:-}"
-
-if [[ -z "$CONTEXT_DIR" ]]; then
-    echo "❌ CONTEXT_DIR must be set!"
-    exit 1
+# Find JAVA binary
+if [[ -n "${JAVA_HOME:-}" ]]; then
+  RUNNER="$JAVA_HOME/bin/java"
+else
+  RUNNER="java"
 fi
 
-: "${SPARK_ENV_LOADED:=}"
+# Setup classpath
+if [[ -d "${SPARK_HOME}/jars" ]]; then
+  SPARK_JARS_DIR="${SPARK_HOME}/jars"
+else
+  SPARK_JARS_DIR="${SPARK_HOME}/assembly/target/scala-2.12/jars"
+fi
+LAUNCH_CLASSPATH="$SPARK_JARS_DIR/*"
 
-REAL_SPARK_HOME="${SPARK_HOME:-}"
-export SPARK_HOME="$CONTEXT_DIR/opt/spark"
-
-# patch spark-class dynamically
-(
-  set +e
-  # Export fake exec function if magic var is set
-  function exec() {
-    if [[ "$SPARK_SPOOL_PRINT_CMD_ONLY" == "1" ]]; then
-      printf "%s\n" "${CMD[@]}"
-      exit 0
-    else
-      command exec "$@"
-    fi
-  }
-  . "$SPARK_HOME/bin/spark-class"
+# Build launcher command
+launcher_cmd=(
+  "$RUNNER"
+  -Xmx128m
+  -cp "$LAUNCH_CLASSPATH"
+  org.apache.spark.launcher.Main
+  "$@"
 )
 
-export SPARK_HOME="$REAL_SPARK_HOME"
+# Run launcher but only capture CMD output
+DELIM=$'\n'
+CMD_START_FLAG="false"
+CMD=()
+
+while IFS= read -d "$DELIM" -r ARG; do
+  if [[ "$CMD_START_FLAG" == "true" ]]; then
+    CMD+=("$ARG")
+  else
+    if [[ "$ARG" == $'\0' ]]; then
+      DELIM=''
+      CMD_START_FLAG="true"
+    elif [[ "$ARG" != "" ]]; then
+      echo "$ARG"
+    fi
+  fi
+done < <("${launcher_cmd[@]}")
+
+# Print command that would be executed
+printf "%s\n" "${CMD[@]}"
 
