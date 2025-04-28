@@ -79,6 +79,8 @@ if [[ ! -f "${CONTEXT_DIR}/opt/spark/conf/spark-env.sh" ]]; then
 fi
 
 echo 'export SPARK_SCALA_VERSION=2.12' >> "${CONTEXT_DIR}/opt/spark/conf/spark-env.sh"
+echo 'export SPARK_ENV_LOADED=1' >> "${CONTEXT_DIR}/opt/spark/conf/spark-env.sh"
+
 echo "✅ Copied manifest template to context."
 echo "�~\~E Context created at $CONTEXT_DIR"
 

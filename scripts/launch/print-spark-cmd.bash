@@ -6,6 +6,7 @@ set -euo pipefail
 SPARK_HOME_IN_ENCLAVE="/opt/spark"
 CONTEXT_DIR="${CONTEXT_DIR:-}"
 
+
 if [[ -z "$CONTEXT_DIR" ]]; then
     echo "❌ CONTEXT_DIR must be set!"
     exit 1
