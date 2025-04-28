@@ -57,5 +57,15 @@ if [[ ! -f "${CONTEXT_DIR}/java.manifest.template" ]]; then
     echo "❌ Failed to copy manifest template!"
     exit 1
 fi
+
+# Copy manifest template
+cp "${SCRIPT_DIR}/_Makefile.manifest" "${CONTEXT_DIR}/Makefile.manifest"
+
+# Optional: Check success
+if [[ ! -f "${CONTEXT_DIR}/Makefile.manifest" ]]; then
+    echo "❌ Failed to copy manifest makefile!"
+    exit 1
+fi
+
 echo "✅ Copied manifest template to context."
 echo "�~\~E Context created at $CONTEXT_DIR"
