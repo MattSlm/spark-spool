@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# 💡 Spark expects this variable, or else load-spark-env.sh crashes
+export SPARK_ENV_LOADED=1
+
 # Wrapper around spark-class to extract the launch command
 SPARK_HOME="${SPARK_HOME:-/opt/spark}"
 
