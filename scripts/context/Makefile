@@ -5,7 +5,7 @@ MANIFEST_MAKEFILE := $(CONTEXT_DIR)/Makefile.manifest
 
 PREPARE_ENV_SCRIPT := $(THIS_DIR)/prepare-env.sh
 CREATE_CONTEXT_SCRIPT := $(THIS_DIR)/create_context.sh
-SPARK_CLASS_WRAPPER_SCRIPT := $(THIS_DIR)/../launch/print-spark-cmd.sh
+SPARK_CLASS_WRAPPER_SCRIPT := $(THIS_DIR)/../launch/print-spark-cmd.bash
 
 .PHONY: all prepare-env create-context manifest clean distclean show-cmd
 
