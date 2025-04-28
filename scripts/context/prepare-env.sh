@@ -71,8 +71,38 @@ for var in "${required_critical_gramine_vars[@]}"; do
     fi
 done
 
+find_free_port() {
+    local start_port=$1
+    local end_port=$2
+
+    for port in $(seq "$start_port" "$end_port"); do
+        if ! ss -ltn "( sport = :$port )" | grep -q .; then
+            if [[ "$port" != "$SPARK_MASTER_PORT" && "$port" != "$SPARK_MASTER_WEBUI_PORT" ]]; then
+                echo "$port"
+                return 0
+            fi
+        fi
+    done
+    return 1
+}
+
+# Default to finding free port starting from 8080 if not manually set
+if [[ -z "${SPARK_WORKER_WEBUI_PORT:-}" ]]; then
+    echo "🌐 SPARK_WORKER_WEBUI_PORT not set. Searching for free port starting from 8080..."
+    found_port=$(find_free_port 8081 8099) || {
+        echo "❌ Could not find free WebUI port between 8080-8099."
+        exit 1
+    }
+    export SPARK_WORKER_WEBUI_PORT="$found_port"
+    echo "✅ Using WebUI port: $SPARK_WORKER_WEBUI_PORT"
+fi
+
+export SPARK_SCALA_VERSION=2.12
+
 # === Save validated environment ===
 cat > "$CONTEXT_DIR/.spark_spool_env" <<EOF
+export SPARK_SCALA_VERSION="$SPARK_SCALA_VERSION"
+export SAPRK_HOME="/opt/spark"
 export SPARK_MASTER_HOST="$SPARK_MASTER_HOST"
 export SPARK_EXECUTOR_MEMORY_GB="$SPARK_EXECUTOR_MEMORY_GB"
 export SPARK_EXECUTOR_MEMORY_OVERHEAD_GB="$SPARK_EXECUTOR_MEMORY_OVERHEAD_GB"
@@ -87,6 +117,7 @@ export SPARK_LOG_DIR="$SPARK_LOG_DIR"
 export SPARK_LOG_LEVEL="$SPARK_LOG_LEVEL"
 export SPARK_MASTER_PORT="$SPARK_MASTER_PORT"
 export SPARK_MASTER_WEBUI_PORT="$SPARK_MASTER_WEBUI_PORT"
+export SPARK_WORKER_WEBUT_PORT="$SPARK_WORKER_WEBUT_PORT"
 export SPARK_LOG_MAXFILES="$SPARK_LOG_MAXFILES"
 export SPARK_LOG_MAXSIZE="$SPARK_LOG_MAXSIZE"
 export SPARK_DAEMON_JAVA_OPTS="$SPARK_DAEMON_JAVA_OPTS"
@@ -105,31 +136,4 @@ export SPARK_SPOOL_DISALLOW_SUBPROCESS="$SPARK_SPOOL_DISALLOW_SUBPROCESS"
 export SGX_ENCLAVE_SIZE="$SGX_ENCLAVE_SIZE"
 EOF
 
-
-find_free_port() {
-    local port=$1
-    local max=$2
-    while [ "$port" -le "$max" ]; do
-        if ! ss -ltn | awk '{print $4}' | grep -q ":$port\$"; then
-            echo "$port"
-            return 0
-        fi
-        port=$((port+1))
-    done
-    return 1
-}
-
-# Default to finding free port starting from 8080 if not manually set
-if [[ -z "${SPARK_WORKER_WEBUI_PORT:-}" ]]; then
-    echo "🌐 SPARK_WORKER_WEBUI_PORT not set. Searching for free port starting from 8080..."
-    found_port=$(find_free_port 8080 8099) || {
-        echo "❌ Could not find free WebUI port between 8080-8099."
-        exit 1
-    }
-    export SPARK_WORKER_WEBUI_PORT="$found_port"
-    echo "✅ Using WebUI port: $SPARK_WORKER_WEBUI_PORT"
-fi
-
-export SPARK_SCALA_VERSION=2.12
-
-echo "Context is built succesfully"
+echo "Env is built succesfully"
