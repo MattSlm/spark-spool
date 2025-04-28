@@ -25,8 +25,14 @@ manifest:
 	fi
 	@make -C $(CONTEXT_DIR) context-manifest
 
+
 show-cmd:
-	$(SPARK_CLASS_WRAPPER_SCRIPT) org.apache.spark.deploy.worker.Worker
+	@if [ -z "$(SPARK_MAIN_CLASS)" ]; then \
+		echo "❌ SPARK_MAIN_CLASS is not set."; \
+		exit 1; \
+	fi
+	@./spark-class-wrapper.sh $(SPARK_MAIN_CLASS) $(SPARK_ARGS)
+
 
 clean:
 	@if [ -d "$(CONTEXT_DIR)" ]; then \
