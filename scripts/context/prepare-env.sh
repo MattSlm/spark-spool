@@ -127,3 +127,7 @@ if [[ -z "${SPARK_WORKER_WEBUI_PORT:-}" ]]; then
     export SPARK_WORKER_WEBUI_PORT="$found_port"
     echo "✅ Using WebUI port: $SPARK_WORKER_WEBUI_PORT"
 fi
+
+export SPARK_SCALA_VERSION=2.12
+
+echo "Context is built succesfully"

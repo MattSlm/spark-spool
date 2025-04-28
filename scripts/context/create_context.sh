@@ -68,4 +68,17 @@ if [[ ! -f "${CONTEXT_DIR}/Makefile.manifest" ]]; then
 fi
 
 echo "✅ Copied manifest template to context."
+
+# Copy conf to spark dir
+cp "{$CONTEXT_DIR}/.spark_spool_env" "${CONTEXT_DIR}/opt/spark/conf"
+
+# Optional: Check success
+if [[ ! -f "${CONTEXT_DIR}/.spark_spool_env" ]]; then
+    echo "❌ Failed to copy the env to spark dir"
+    exit 1
+fi
+
+echo "✅ Copied manifest template to context."
 echo "�~\~E Context created at $CONTEXT_DIR"
+
+
