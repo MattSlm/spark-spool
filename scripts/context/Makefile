@@ -31,7 +31,7 @@ show-cmd:
 		echo "❌ SPARK_MAIN_CLASS is not set."; \
 		exit 1; \
 	fi
-	@./spark-class-wrapper.sh $(SPARK_MAIN_CLASS) $(SPARK_ARGS)
+	@../launch/print-spark-cmd.bash $(SPARK_MAIN_CLASS) $(SPARK_ARGS)
 
 
 clean:
