@@ -72,11 +72,11 @@ for var in "${required_critical_gramine_vars[@]}"; do
 done
 
 find_free_port() {
-    local start_port=$1
-    local end_port=$2
-
-    for port in $(seq "$start_port" "$end_port"); do
-        if ! ss -ltn "( sport = :$port )" | grep -q .; then
+    local port_start=$1
+    local port_end=$2
+    for ((port=$port_start; port<=port_end; port++)); do
+        if ! ss -ltn | awk '{print $4}' | grep -q ":$port$"; then
+            # Also avoid conflict with master ports
             if [[ "$port" != "$SPARK_MASTER_PORT" && "$port" != "$SPARK_MASTER_WEBUI_PORT" ]]; then
                 echo "$port"
                 return 0

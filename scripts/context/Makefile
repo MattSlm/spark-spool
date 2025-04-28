@@ -1,3 +1,4 @@
+set -euo pipefail
 SHELL := /bin/bash
 THIS_DIR := $(dir $(realpath $(lastword $(MAKEFILE_LIST))))
 CONTEXT_DIR ?= 
@@ -23,7 +24,7 @@ manifest:
 		echo "❌ Context directory '$(CONTEXT_DIR)' not found. Please run create-context first."; \
 		exit 1; \
 	fi
-	@make -C $(CONTEXT_DIR) context-manifest
+	@make -C $(CONTEXT_DIR) manifest
 
 
 show-cmd:
