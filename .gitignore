@@ -1,0 +1,28 @@
+# General
+*.swp
+*.swo
+*.log
+*.out
+*.bak
+*.tmp
+
+# Python / Bash
+__pycache__/
+*.pyc
+
+# Spark-spool outputs
+/tmp/spark-spool-tests/
+/opt/git/spark-spool/scripts/context/created_context/
+/opt/git/spark-spool/scripts/context/logs/
+/opt/git/spark-spool/scripts/context/untrusted-logs/
+/opt/git/spark-spool/scripts/context/*.manifest
+/opt/git/spark-spool/scripts/context/*.sig
+/opt/git/spark-spool/scripts/context/*.token
+
+# Deps artifacts
+/opt/git/spark-spool/deps/system-deps.lock
+/opt/git/spark-spool/deps/deps-setup.sh
+
+# Editor backup
+*~
+

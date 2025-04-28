@@ -1,0 +1,8 @@
+ca-certificates
+coreutils
+curl
+gnupg
+iproute2
+openjdk-11-jdk
+sbt
+time

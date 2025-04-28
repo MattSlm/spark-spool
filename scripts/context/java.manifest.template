@@ -1,0 +1,53 @@
+# Basic Entry
+libos.entrypoint = "{{ entrypoint }}"
+loader.log_level = "{{ loader_log_level }}"
+loader.log_file = "{{ loader_log_file }}"
+loader.insecure__use_cmdline_argv = true
+loader.insecure__use_host_env = true     # <<< 🌟 ADD THIS
+sys.enable_extra_runtime_domain_names_conf = true
+
+# (rest the same)
+
+# Environment
+loader.env.LD_LIBRARY_PATH = "/lib:{{ arch_libdir }}:/usr/lib:/usr/{{ arch_libdir }}"
+
+# Filesystem
+fs.mounts = [
+  { uri = "file:{{ gramine.runtimedir() }}", path = "/lib" },
+  { uri = "file:{{ arch_libdir }}", path = "{{ arch_libdir }}" },
+  { uri = "file:/usr", path = "/usr" },
+  { type = "tmpfs", path = "/tmp" },
+  { uri = "file:opt/spark/jars", path = "/opt/spark/jars" },
+  { uri = "file:opt/spark/conf", path = "/opt/spark/conf" },
+  { uri = "file:log", path = "/log" }
+]
+
+# SGX
+sgx.enclave_size = "{{ sgx_enclave_size }}"
+sgx.max_threads = {{ sgx_max_threads }}
+sgx.edmm_enable = {{ sgx_edmm_enable }}
+sgx.use_exinfo = true
+
+sgx.trusted_files = [
+  "file:{{ entrypoint }}",
+  "file:{{ gramine.runtimedir() }}/",
+  "file:{{ arch_libdir }}/",
+  "file:/usr/{{ arch_libdir }}/",
+  "file:/usr/lib/jvm/java-11-openjdk-amd64/lib/",
+  "file:opt/spark/conf/",
+  "file:opt/spark/jars/"
+]
+sgx.allowed_files = [
+  "file:log/worker.stdout.log",
+  "file:log/worker.stderr.log",
+  "file:log/loader.log"
+]
+
+# System Settings
+sys.stack.size = "{{ stack_size }}"
+sys.brk.max_size = "{{ brk_size }}"
+sys.fds.limit = {{ fds_limit }}
+sys.enable_sigterm_injection = {{ enable_sigterm }}
+sys.disallow_subprocesses = {{ disallow_subprocesses }}
+loader.insecure__disable_aslr = {{ disable_aslr }} 
+

@@ -1,0 +1,71 @@
+# ============================
+# Context Manifest Makefile
+# ============================
+
+SHELL := /bin/bash
+
+# === Variables ===
+ARCH_LIBDIR ?= /lib/$(shell $(CC) -dumpmachine)
+CONTEXT_DIR := $(realpath .)
+
+ENTRYPOINT := $(CONTEXT_DIR)/opt/spark/jre/bin/java
+MANIFEST_TEMPLATE := $(CONTEXT_DIR)/java.manifest.template
+MANIFEST_OUT := $(CONTEXT_DIR)/java.manifest
+
+ifeq ($(DEBUG),1)
+GRAMINE_LOG_LEVEL = debug
+else
+GRAMINE_LOG_LEVEL = error
+endif
+
+
+ifeq ("$(wildcard $(CONTEXT_DIR)/opt/spark/conf)","")
+$(error "❌ Context not built yet: Missing opt/spark/conf/. Please run 'make context' first.")
+endif
+
+# === Targets ===
+
+.PHONY: all
+all: context-manifest
+ifeq ($(SGX),1)
+all: context-sgx
+endif
+
+.PHONY: context-manifest
+context-manifest: $(MANIFEST_OUT)
+
+$(MANIFEST_OUT): $(MANIFEST_TEMPLATE)
+	@echo "🛡️ Building Gramine manifest..."
+	gramine-manifest \
+		-Darch_libdir=$(ARCH_LIBDIR) \
+		-Dentrypoint=$(ENTRYPOINT) \
+              	-Dlog_level=$(SPARK_SPOOL_LOADER_LOG_LEVEL) \
+	  	-Dstack_size=$(SPARK_SPOOL_STACK_SIZE) \
+	  	-Dbrk_size=$(SPARK_SPOOL_BRK_SIZE) \
+	  	-Denable_sigterm=$(SPARK_SPOOL_ENABLE_SIGTERM) \
+	  	-Dfds_limit=$(SPARK_SPOOL_FDS_LIMIT) \
+	  	-Ddisable_aslr=$(SPARK_SPOOL_INSECURE_DISABLE_ASLR) \
+	  	-Ddisallow_subprocess=$(SPARK_SPOOL_DISALLOW_SUBPROCESS) \
+	  	-Dedmm=$(SPARK_SPOOL_EDMM) \
+	  	-Dmax_threads=$(SPARK_SPOOL_ENCLAVE_THREADS) \
+	  	-Dloader_log_file=$(SPARK_SPOOL_LOADER_LOG_FILE) \
+		$(MANIFEST_TEMPLATE) > $(MANIFEST_OUT)
+
+.PHONY: context-sgx
+context-sgx: $(MANIFEST_OUT)
+	@echo "🔒 Signing Gramine SGX manifest..."
+	gramine-sgx-sign \
+		--manifest $(MANIFEST_OUT) \
+		--output $(MANIFEST_OUT).sgx
+
+.PHONY: clean
+clean:
+	@echo "🧹 Cleaning manifest files..."
+	$(RM) $(MANIFEST_OUT) $(MANIFEST_OUT).sgx $(MANIFEST_OUT).token $(MANIFEST_OUT).sig
+
+.PHONY: distclean
+distclean: clean
+	@echo "💥 Removing full context directory..."
+	@cd .. && rm -rf $(notdir $(CONTEXT_DIR))
+
+
