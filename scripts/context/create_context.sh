@@ -58,5 +58,4 @@ if [[ ! -f "${CONTEXT_DIR}/java.manifest.template" ]]; then
     exit 1
 fi
 echo "✅ Copied manifest template to context."
-echo "�~\~E Context created at $CONTEXT_D
-IR"
+echo "�~\~E Context created at $CONTEXT_DIR"
