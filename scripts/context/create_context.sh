@@ -70,14 +70,15 @@ fi
 echo "✅ Copied manifest template to context."
 
 # Copy conf to spark dir
-cp "{$CONTEXT_DIR}/.spark_spool_env" "${CONTEXT_DIR}/opt/spark/conf"
+cp "{$CONTEXT_DIR}/.spark_spool_env" "${CONTEXT_DIR}/opt/spark/conf/spark-env.sh"
 
 # Optional: Check success
-if [[ ! -f "${CONTEXT_DIR}/.spark_spool_env" ]]; then
+if [[ ! -f "${CONTEXT_DIR}/opt/spark/conf/spark-env.sh" ]]; then
     echo "❌ Failed to copy the env to spark dir"
     exit 1
 fi
 
+echo 'export SPARK_SCALA_VERSION=2.12' >> "$CONTEXT_DIR/opt/spark/conf/spark-env.sh"
 echo "✅ Copied manifest template to context."
 echo "�~\~E Context created at $CONTEXT_DIR"
 
