@@ -5,7 +5,7 @@ set -euo pipefail
 TEST_ROOT="/tmp/spark-spool-tests"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONTEXT_SCRIPT_DIR="$SCRIPT_DIR/../context"
-SPARK_CLASS_WRAPPER="$CONTEXT_SCRIPT_DIR/spark-class-wrapper.sh"
+SPARK_CLASS_WRAPPER="$CONTEXT_SCRIPT_DIR/../launch/print-spark-cmd.bash"
 PREPARE_ENV="$CONTEXT_SCRIPT_DIR/prepare-env.sh"
 CREATE_CONTEXT="$CONTEXT_SCRIPT_DIR/create_context.sh"
 MAKEFILE="$CONTEXT_SCRIPT_DIR/Makefile"
@@ -91,11 +91,11 @@ EOF
         test_pass=false
     fi
 
-    if ! make -f "$MAKEFILE" CONTEXT_DIR="$context_dir" show-cmd; then
+    if ! make -f "$MAKEFILE" CONTEXT_DIR="$context_dir" SPARK_MAIN_CLASS="org.apache.spark.deploy.worker.Worker" SPARK_ARGS="spark://127.0.0.1:7777" show-cmd; then
         test_pass=false
     fi
 
-    if ! make -f "$MAKEFILE" CONTEXT_DIR="$context_dir" manifest; then
+    if ! make -f "$MAKEFILE" CONTEXT_DIR="$context_dir" context-manifest; then
         test_pass=false
     fi
 
