@@ -23,7 +23,7 @@ manifest:
 		echo "❌ Context directory '$(CONTEXT_DIR)' not found. Please run create-context first."; \
 		exit 1; \
 	fi
-	@make -C $(CONTEXT_DIR) manifest
+	@make -C $(CONTEXT_DIR) context-manifest
 
 show-cmd:
 	$(SPARK_CLASS_WRAPPER_SCRIPT) org.apache.spark.deploy.worker.Worker
