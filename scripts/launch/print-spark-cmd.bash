@@ -16,10 +16,19 @@ fi
 REAL_SPARK_HOME="${SPARK_HOME:-}"
 export SPARK_HOME="$CONTEXT_DIR/opt/spark"
 
+# patch spark-class dynamically
 (
-    set +e
-    . "$SPARK_HOME/bin/spark-class"
-    printf "%s\n" "${CMD[@]}"
+  set +e
+  # Export fake exec function if magic var is set
+  function exec() {
+    if [[ "$SPARK_SPOOL_PRINT_CMD_ONLY" == "1" ]]; then
+      printf "%s\n" "${CMD[@]}"
+      exit 0
+    else
+      command exec "$@"
+    fi
+  }
+  . "$SPARK_HOME/bin/spark-class"
 )
 
 export SPARK_HOME="$REAL_SPARK_HOME"
