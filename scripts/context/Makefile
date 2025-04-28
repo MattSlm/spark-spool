@@ -1,5 +1,6 @@
 SHELL := /bin/bash
-set -euo pipefail
+
+.SHELLFLAGS := -euo pipefail -c
 THIS_DIR := $(dir $(realpath $(lastword $(MAKEFILE_LIST))))
 CONTEXT_DIR ?= 
 MANIFEST_MAKEFILE := $(CONTEXT_DIR)/Makefile.manifest
