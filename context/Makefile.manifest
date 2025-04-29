@@ -37,9 +37,11 @@ $(MANIFEST_TEMPLATE):
 	@echo "📋 Copying spark.manifest.template into context $(CONTEXT_ID)..."
 	cp $(SPARK_SPOOL_MANIFEST_TEMPLATE) $(MANIFEST_TEMPLATE)
 
-# Step 2: Generate Gramine manifest
 $(MANIFEST_OUT): $(MANIFEST_TEMPLATE)
-	@echo "🔧 Building manifest for context $(CONTEXT_ID)..."
+	@if ! grep -q "/scratch/" $(MANIFEST_OUT) 2>/dev/null; then \
+	    echo "🔧 Manifest missing or invalid, rebuilding..."; \
+	    rm -f $(MANIFEST_OUT); \
+	fi
 	cd $(CONTEXT_DIR) && gramine-manifest \
 		-Darch_libdir=$(ARCH_LIBDIR) \
 		-Dentrypoint=$(ENTRYPOINT) \
@@ -48,8 +50,8 @@ $(MANIFEST_OUT): $(MANIFEST_TEMPLATE)
 		-Dbrk_size=$(spool.brk.size) \
 		-Denable_sigterm=$(spool.enable.sigterm) \
 		-Ddisable_aslr=$(spool.disable.aslr) \
-		-Dfds_limit=$(spool.fds_limit)
 		-Ddisallow_subprocesses=$(spool.disallow.subprocesses) \
+		-Dfds_limit=$(spool.fds_limit) \
 		-Dsgx_enclave_size=$(spool.sgx.enclave_size) \
 		-Dsgx_max_threads=$(spool.sgx.max_threads) \
 		-Dsgx_edmm_enable=$(spool.sgx.edmm_enable) \
