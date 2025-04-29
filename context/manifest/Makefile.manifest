@@ -8,7 +8,7 @@ MANIFEST_TEMPLATE := $(CONTEXT_DIR)/template.manifest
 MANIFEST_OUT := $(CONTEXT_DIR)/manifest
 
 SPARK_SPOOL_CONF ?= $(SPARK_HOME)/conf/spool-spark-default.conf
-SPARK_SPOOL_MANIFEST_TEMPLATE ?= $(SPARK_HOME)/conf/spark.manifest.template
+SPARK_SPOOL_MANIFEST_TEMPLATE ?= $(SPARK_HOME)/conf/spool/spool.manifest.template.spool
 
 # Load config
 include $(SPARK_SPOOL_CONF)
