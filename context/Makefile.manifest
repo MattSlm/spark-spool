@@ -38,20 +38,17 @@ $(MANIFEST_TEMPLATE):
 	cp $(SPARK_SPOOL_MANIFEST_TEMPLATE) $(MANIFEST_TEMPLATE)
 
 $(MANIFEST_OUT): $(MANIFEST_TEMPLATE)
-	@if ! grep -q "/scratch/" $(MANIFEST_OUT) 2>/dev/null; then \
-	    echo "🔧 Manifest missing or invalid, rebuilding..."; \
-	    rm -f $(MANIFEST_OUT); \
-	fi
+	@echo "🔧 Building manifest for context $(CONTEXT_ID)..."
 	cd $(CONTEXT_DIR) && gramine-manifest \
-		-Darch_libdir=$(ARCH_LIBDIR) \
-		-Dentrypoint=$(ENTRYPOINT) \
+		-Darch_libdir=$(spool.arch_libdir) \
+		-Dentrypoint=$(spool.entrypoint) \
 		-Dloader_log_level=$(spool.loader.log_level) \
 		-Dstack_size=$(spool.stack.size) \
 		-Dbrk_size=$(spool.brk.size) \
+		-Dfds_limit=$(spool.fds_limit) \
 		-Denable_sigterm=$(spool.enable.sigterm) \
 		-Ddisable_aslr=$(spool.disable.aslr) \
 		-Ddisallow_subprocesses=$(spool.disallow.subprocesses) \
-		-Dfds_limit=$(spool.fds_limit) \
 		-Dsgx_enclave_size=$(spool.sgx.enclave_size) \
 		-Dsgx_max_threads=$(spool.sgx.max_threads) \
 		-Dsgx_edmm_enable=$(spool.sgx.edmm_enable) \
