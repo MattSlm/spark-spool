@@ -37,6 +37,11 @@ print(port)
 ')
 
 # 3. Copy and patch spark-defaults.conf
+if [ ! -f "$SPARK_HOME/conf/spark-defaults.conf" ]; then
+    echo "❌ spark-defaults.conf missing! Please copy the .template first."
+    exit 1
+fi
+
 cp "$SPARK_HOME/conf/spark-defaults.conf" "$CONF_DIR/spark-defaults.conf"
 
 {

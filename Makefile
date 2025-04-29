@@ -51,21 +51,26 @@ check-deps:
 		echo "✅ All dependencies are installed."; \
 	fi
 
-# Step 4: Install spool configs into Spark conf dir
 install-spool-config: check-deps
 	@echo "🔧 Installing spool-spark-default.conf and spark.manifest.template to $(SPARK_HOME)/conf/..."
 	@if [ ! -d "$(SPARK_HOME)/conf" ]; then \
 		echo "❌ SPARK_HOME $(SPARK_HOME)/conf not found!"; \
 		exit 1; \
 	fi
-	@cp localconf/spool-spark-default.conf $(SPARK_HOME)/conf/
-	@cp localconf/spark.manifest.template $(SPARK_HOME)/conf/
+	@if [ ! -f "$(SPARK_HOME)/conf/spark-defaults.conf" ]; then \
+		echo "⚠️ WARNING: spark-defaults.conf not found!"; \
+		echo "👉 Please create it manually:"; \
+		echo "    cp spark-defaults.conf.template spark-defaults.conf"; \
+	fi
+	@if [ ! -f "$(SPARK_HOME)/conf/log4j.properties" ]; then \
+		echo "⚠️ WARNING: log4j.properties not found!"; \
+		echo "👉 Please create it manually:"; \
+		echo "    cp log4j.properties.template log4j.properties"; \
+	fi
+	@cp spool-spark-default.conf $(SPARK_HOME)/conf/
+	@cp spark.manifest.template $(SPARK_HOME)/conf/
 	@echo "✅ spool-spark-default.conf installed to $(SPARK_HOME)/conf/"
 	@echo "✅ spark.manifest.template installed to $(SPARK_HOME)/conf/"
-
-# Group deps operations
-deps: parse-deps install-deps check-deps install-spool-config
-
 # ========================
 # Context Management
 # ========================
@@ -86,7 +91,7 @@ finalize_context:
 # Build manifest for a context (for Gramine)
 build_manifest:
 	@echo "🛠️ Building manifest for context $(CONTEXT_ID) in mode $(MODE)..."
-	@$(MAKE) -C $(SCRIPTS_DIR)/context -f Makefile.manifest CONTEXT_ID=$(CONTEXT_ID) MODE=$(MODE)
+	@$(MAKE) -C $(SCRIPTS_DIR)/context -f Makefile.manifest CONTEXT_ID=$(CONTEXT_ID) MODE=$(MODE) SPARK_HOME=$(SPARK_HOME)
 
 # ========================
 # Cleaning Targets
