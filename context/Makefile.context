@@ -74,18 +74,18 @@ create-manifest: install-default-spool-conf
 
 check-manifest:
 	@echo "🔍 Checking manifest outputs for context $(CONTEXT_ID)..."
-	@if [ ! -f "$(CONTEXT_DIR)/manifest" ]; then \
+	@if [ ! -f "$(CONTEXT_DIR)/java.manifest" ]; then \
 		echo "❌ Manifest missing!"; exit 1; \
 	else \
 		echo "✅ Manifest file exists."; \
 	fi
 ifeq ($(MODE),sgx)
-	@if [ ! -f "$(CONTEXT_DIR)/manifest.sgx" ]; then \
+	@if [ ! -f "$(CONTEXT_DIR)/java.manifest.sgx" ]; then \
 		echo "❌ manifest.sgx missing!"; exit 1; \
 	else \
 		echo "✅ manifest.sgx exists."; \
 	fi
-	@if [ ! -f "$(CONTEXT_DIR)/manifest.sig" ]; then \
+	@if [ ! -f "$(CONTEXT_DIR)/java.manifest.sig" ]; then \
 		echo "❌ manifest.sig missing!"; exit 1; \
 	else \
 		echo "✅ manifest.sig exists."; \
