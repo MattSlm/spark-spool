@@ -9,7 +9,7 @@ SPOOL_CONF_PATH ?=
 MODE ?= direct
 
 CONTEXT_DIR := $(SPARK_SPOOL_CONTEXT_MAINDIR)/$(CONTEXT_ID)
-SPOOL_CONF := $(CONTEXT_DIR)/conf/spool-spark-default.conf
+SPOOL_CONF := $(SPARK_HOME)/conf/$(CONTEXT_ID)/spool-spark-default.conf
 MANIFEST_DIR := $(CONTEXT_ROOT)/manifest
 
 .PHONY: all create-context finalize-context compile-context create-manifest check-context check-manifest purge-manifest check-env install-default-spool-conf
@@ -37,12 +37,7 @@ create-context:
 	@echo "🛠️ Creating context $(CONTEXT_ID)..."
 	SPARK_SPOOL_CONTEXT_MAINDIR=$(SPARK_SPOOL_CONTEXT_MAINDIR) \
 	SPARK_HOME=$(SPARK_HOME) \
-	bash $(CONTEXT_ROOT)/create_context.sh "$(CONTEXT_ID)" dummy-class
-ifneq ($(SPOOL_CONF_PATH),)
-	@echo "📋 Copying user-provided spool conf: $(SPOOL_CONF_PATH)"
-	@mkdir -p "$(SPARK_HOME)/conf/$(CONTEXT_ID)"
-	cp "$(SPOOL_CONF_PATH)" "$(SPARK_HOME)/conf/$(CONTEXT_ID)/spool-spark-default.conf"
-endif
+	bash $(CONTEXT_ROOT)/create_context.sh "$(CONTEXT_ID)" "$(SPOOL_CONF_PATH)"
 	@$(MAKE) -f $(CONTEXT_ROOT)/Makefile.context check-context CONTEXT_ID=$(CONTEXT_ID)
 	@$(MAKE) -f $(CONTEXT_ROOT)/Makefile.context check-env
 
