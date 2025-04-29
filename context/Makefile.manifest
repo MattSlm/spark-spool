@@ -48,6 +48,7 @@ $(MANIFEST_OUT): $(MANIFEST_TEMPLATE)
 		-Dbrk_size=$(spool.brk.size) \
 		-Denable_sigterm=$(spool.enable.sigterm) \
 		-Ddisable_aslr=$(spool.disable.aslr) \
+		-Dfds_limit=$(spool.fds_limit)
 		-Ddisallow_subprocesses=$(spool.disallow.subprocesses) \
 		-Dsgx_enclave_size=$(spool.sgx.enclave_size) \
 		-Dsgx_max_threads=$(spool.sgx.max_threads) \
