@@ -1,8 +1,9 @@
 # Top-level Makefile for Spark Spool
 
 REPO_ROOT := $(realpath $(dir $(lastword $(MAKEFILE_LIST))))
-SCRIPTS_DIR := $(REPO_ROOT)/scripts
 DEPS_DIR := $(REPO_ROOT)/deps
+CONTEXT_DIR := $(REPO_ROOT)/context
+TEST_DIR := $(REPO_ROOT)/test
 
 LOCKFILE := $(DEPS_DIR)/system-deps.lock
 REPO_SETUP := $(DEPS_DIR)/deps-setup.sh
@@ -20,17 +21,14 @@ all: deps install-spool-config
 # Dependency Management
 # ========================
 
-# Step 1: Parse system-deps.yaml and create lockfile
 parse-deps:
 	@echo "📦 Parsing dependencies and creating lockfile..."
-	@bash $(SCRIPTS_DIR)/deps/parse-system-deps.sh
+	@bash $(DEPS_DIR)/parse-system-deps.sh
 
-# Step 2: Install dependencies from lockfile
 install-deps:
 	@echo "📦 Installing packages from lockfile..."
-	@bash $(SCRIPTS_DIR)/deps/install-deps-from-lock.sh
+	@bash $(DEPS_DIR)/install-deps-from-lock.sh
 
-# Step 3: Check if dependencies are already installed
 check-deps:
 	@echo "🔍 Checking if all system dependencies are installed..."
 	@if [ ! -f "$(LOCKFILE)" ]; then \
@@ -71,40 +69,38 @@ install-spool-config: check-deps
 	@cp spark.manifest.template $(SPARK_HOME)/conf/
 	@echo "✅ spool-spark-default.conf installed to $(SPARK_HOME)/conf/"
 	@echo "✅ spark.manifest.template installed to $(SPARK_HOME)/conf/"
+
+# Group dependency ops
+deps: parse-deps install-deps check-deps
+
 # ========================
 # Context Management
 # ========================
 
-# Create a new context
 create_context:
 	@echo "🛠️ Creating context $(CONTEXT_ID)..."
 	SPARK_SPOOL_CONTEXT_MAINDIR=$(SPARK_SPOOL_CONTEXT_MAINDIR) \
-	bash $(SCRIPTS_DIR)/context/create_context.sh $(CONTEXT_ID) $(CLASS) $(CLASS_ARGS)
+	bash $(CONTEXT_DIR)/create_context.sh $(CONTEXT_ID) $(CLASS) $(CLASS_ARGS)
 
-# Finalize a context (set confs, logs, ports, etc.)
 finalize_context:
 	@echo "🛠️ Finalizing context $(CONTEXT_ID)..."
 	SPARK_SPOOL_CONTEXT_MAINDIR=$(SPARK_SPOOL_CONTEXT_MAINDIR) \
 	SPARK_HOME=$(SPARK_HOME) \
-	bash $(SCRIPTS_DIR)/context/finalize_context.sh $(CONTEXT_ID) $(LOG_LEVEL)
+	bash $(CONTEXT_DIR)/finalize_context.sh $(CONTEXT_ID) $(LOG_LEVEL)
 
-# Build manifest for a context (for Gramine)
 build_manifest:
 	@echo "🛠️ Building manifest for context $(CONTEXT_ID) in mode $(MODE)..."
-	@$(MAKE) -C $(SCRIPTS_DIR)/context -f Makefile.manifest CONTEXT_ID=$(CONTEXT_ID) MODE=$(MODE) SPARK_HOME=$(SPARK_HOME)
+	@$(MAKE) -C $(CONTEXT_DIR) -f Makefile.manifest CONTEXT_ID=$(CONTEXT_ID) MODE=$(MODE) SPARK_HOME=$(SPARK_HOME)
 
 # ========================
 # Cleaning Targets
 # ========================
 
-# Clean intermediate artifacts (contexts, manifests, etc.)
 clean:
-	@echo "🧹 Cleaning context artifacts (to be improved later)..."
+	@echo "🧹 Cleaning context artifacts (future work)..."
 	@# Example: rm -rf $(SPARK_SPOOL_CONTEXT_MAINDIR)/*
 
-# Full cleanup: deps + contexts
 distclean: clean
-	@echo "🔥 Fully cleaning lockfiles and setup scripts..."
+	@echo "🔥 Fully cleaning lockfiles and setup artifacts..."
 	@rm -f $(LOCKFILE)
 	@rm -f $(REPO_SETUP)
-

@@ -1,16 +1,30 @@
-# Requires CONTEXT_ID and MODE (native/direct/sgx)
+# Makefile for building Gramine Manifest inside a Spark Spool Context
+
+# Defaults
+SPARK_HOME ?= /opt/spark
 SPARK_SPOOL_CONTEXT_MAINDIR ?= /tmp/spool-contexts
+
+# Context paths
+CONTEXT_DIR := $(SPARK_SPOOL_CONTEXT_MAINDIR)/$(CONTEXT_ID)
+MANIFEST_TEMPLATE := $(CONTEXT_DIR)/template.manifest
+MANIFEST_OUT := $(CONTEXT_DIR)/manifest
+
+# Config files
 SPARK_SPOOL_CONF ?= $(SPARK_HOME)/conf/spool-spark-default.conf
+SPARK_SPOOL_MANIFEST_TEMPLATE ?= $(SPARK_HOME)/conf/spark.manifest.template
 
-CONTEXT_DIR = $(SPARK_SPOOL_CONTEXT_MAINDIR)/$(CONTEXT_ID)
-MANIFEST_TEMPLATE = $(CONTEXT_DIR)/template.manifest
-MANIFEST_OUT = $(CONTEXT_DIR)/manifest
-
+# Load Gramine-Spark configuration
 include $(SPARK_SPOOL_CONF)
+
+.PHONY: all
+
+# ========================
+# Manifest Build Rules
+# ========================
 
 ifeq ($(MODE),native)
 all:
-	@echo "Skipping manifest creation for native mode."
+	@echo "✅ Native mode selected, skipping manifest creation."
 else
 all: $(MANIFEST_OUT)
 ifeq ($(MODE),sgx)
@@ -18,9 +32,15 @@ all: $(MANIFEST_OUT).sgx $(MANIFEST_OUT).sig
 endif
 endif
 
+# Step 1: Ensure template exists in context
+$(MANIFEST_TEMPLATE):
+	@echo "📋 Copying spark.manifest.template into context $(CONTEXT_ID)..."
+	cp $(SPARK_SPOOL_MANIFEST_TEMPLATE) $(MANIFEST_TEMPLATE)
+
+# Step 2: Generate Gramine manifest
 $(MANIFEST_OUT): $(MANIFEST_TEMPLATE)
 	@echo "🔧 Building manifest for context $(CONTEXT_ID)..."
-	gramine-manifest \
+	cd $(CONTEXT_DIR) && gramine-manifest \
 		-Darch_libdir=$(ARCH_LIBDIR) \
 		-Dentrypoint=$(ENTRYPOINT) \
 		-Dloader_log_level=$(spool.loader.log_level) \
@@ -29,17 +49,24 @@ $(MANIFEST_OUT): $(MANIFEST_TEMPLATE)
 		-Denable_sigterm=$(spool.enable.sigterm) \
 		-Ddisable_aslr=$(spool.disable.aslr) \
 		-Ddisallow_subprocesses=$(spool.disallow.subprocesses) \
-		-Dsgx_enclave_size=4G \
+		-Dsgx_enclave_size=$(spool.sgx.enclave_size) \
 		-Dsgx_max_threads=$(spool.sgx.max_threads) \
-		-Dsgx_edmm_enable=$(spool.sgx.edmm.enable) \
+		-Dsgx_edmm_enable=$(spool.sgx.edmm_enable) \
 		-Dspark_home=$(SPARK_HOME) \
 		-Dcontext_id=$(CONTEXT_ID) \
-		-Dloader_log_file=$(spool.loader.log_file) \
-		$< >$@
+		$(notdir $(MANIFEST_TEMPLATE)) > $(notdir $(MANIFEST_OUT))
 
+# Step 3: Sign manifest for SGX mode
 $(MANIFEST_OUT).sgx $(MANIFEST_OUT).sig: $(MANIFEST_OUT)
 	@echo "🔐 Signing manifest for SGX mode..."
-	gramine-sgx-sign \
-		--manifest $(MANIFEST_OUT) \
-		--output $(MANIFEST_OUT).sgx
+	cd $(CONTEXT_DIR) && gramine-sgx-sign \
+		--manifest $(notdir $(MANIFEST_OUT)) \
 
+.PHONY: purge_context
+
+purge_context:
+	@echo "🧹 Purging context $(CONTEXT_ID)..."
+	SPARK_HOME=$(SPARK_HOME) \
+	SPARK_SPOOL_CONTEXT_MAINDIR=$(SPARK_SPOOL_CONTEXT_MAINDIR) \
+	bash purge_context.sh $(CONTEXT_ID)
+		--output $(notdir $(MANIFEST_OUT)).sgx
