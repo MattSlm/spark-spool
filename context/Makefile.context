@@ -67,7 +67,7 @@ purge-manifest:
 # Manifest Management
 # ========================
 
-create-manifest:
+create-manifest: install-default-spool-conf
 	@echo "🔧 Building manifest for context $(CONTEXT_ID) in mode $(MODE)..."
 	$(MAKE) -C $(MANIFEST_DIR) -f Makefile.manifest CONTEXT_ID=$(CONTEXT_ID) MODE=$(MODE) SPARK_HOME=$(SPARK_HOME)
 	@$(MAKE) -f $(CONTEXT_ROOT)/Makefile.context check-manifest CONTEXT_ID=$(CONTEXT_ID)
@@ -150,10 +150,6 @@ install-default-spool-conf:
 	@mkdir -p "$(SPARK_HOME)/conf/spool"
 	@for f in $(CONTEXT_ROOT)/../local-conf/*.spool; do \
 		dst="$(SPARK_HOME)/conf/spool/$$(basename $${f})"; \
-		if [ ! -f "$$dst" ]; then \
-			echo "📋 Copying missing default: $$dst"; \
-			cp "$$f" "$$dst"; \
-		else \
-			echo "✅ Default already exists: $$dst"; \
-		fi \
+		echo "📋 Overwriting: $$dst"; \
+		cp "$$f" "$$dst"; \
 	done

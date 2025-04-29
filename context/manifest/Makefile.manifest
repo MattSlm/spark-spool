@@ -4,8 +4,8 @@ SPARK_HOME ?= /opt/spark
 SPARK_SPOOL_CONTEXT_MAINDIR ?= /tmp/spool-contexts
 
 CONTEXT_DIR := $(SPARK_SPOOL_CONTEXT_MAINDIR)/$(CONTEXT_ID)
-MANIFEST_TEMPLATE := $(CONTEXT_DIR)/template.manifest
-MANIFEST_OUT := $(CONTEXT_DIR)/manifest
+MANIFEST_TEMPLATE := $(CONTEXT_DIR)/java.manifest.template
+MANIFEST_OUT := $(CONTEXT_DIR)/java.manifest
 
 SPARK_SPOOL_CONF ?= $(SPARK_HOME)/conf/spool-spark-default.conf
 SPARK_SPOOL_MANIFEST_TEMPLATE ?= $(SPARK_HOME)/conf/spool/spool.manifest.template.spool
@@ -31,25 +31,34 @@ $(MANIFEST_TEMPLATE):
 	cp $(SPARK_SPOOL_MANIFEST_TEMPLATE) $(MANIFEST_TEMPLATE)
 
 # Build manifest
+# Build manifest
 $(MANIFEST_OUT): $(MANIFEST_TEMPLATE)
 	@echo "🔧 Forcing clean manifest rebuild for context $(CONTEXT_ID)..."
 	@rm -f $(MANIFEST_OUT)
-	cd $(CONTEXT_DIR) && gramine-manifest \
-		-Darch_libdir=$(spool.arch_libdir) \
-		-Dentrypoint=$(spool.entrypoint) \
-		-Dloader_log_level=$(spool.loader.log_level) \
-		-Dstack_size=$(spool.stack.size) \
-		-Dbrk_size=$(spool.brk.size) \
-		-Dfds_limit=$(spool.fds_limit) \
-		-Denable_sigterm=$(spool.enable.sigterm) \
-		-Ddisable_aslr=$(spool.disable.aslr) \
-		-Ddisallow_subprocesses=$(spool.disallow.subprocesses) \
-		-Dsgx_enclave_size=$(spool.sgx.enclave_size) \
-		-Dsgx_max_threads=$(spool.sgx.max_threads) \
-		-Dsgx_edmm_enable=$(spool.sgx.edmm_enable) \
-		-Dspark_home=$(SPARK_HOME) \
-		-Dcontext_id=$(CONTEXT_ID) \
-		$(notdir $(MANIFEST_TEMPLATE)) > $(notdir $(MANIFEST_OUT))
+	@cd $(CONTEXT_DIR) && \
+		if gramine-manifest \
+			-Darch_libdir=$(spool.arch_libdir) \
+			-Dentrypoint=$(spool.entrypoint) \
+			-Dloader_log_level=$(spool.loader.log_level) \
+			-Dstack_size=$(spool.stack.size) \
+			-Dbrk_size=$(spool.brk.size) \
+			-Dfds_limit=$(spool.fds_limit) \
+			-Denable_sigterm=$(spool.enable.sigterm) \
+			-Ddisable_aslr=$(spool.disable.aslr) \
+			-Ddisallow_subprocesses=$(spool.disallow.subprocesses) \
+			-Dsgx_enclave_size=$(spool.sgx.enclave_size) \
+			-Dsgx_max_threads=$(spool.sgx.max_threads) \
+			-Dsgx_edmm_enable=$(spool.sgx.edmm_enable) \
+			-Dspark_home=$(SPARK_HOME) \
+			-Dcontext_id=$(CONTEXT_ID) \
+			$(notdir $(MANIFEST_TEMPLATE)) > $(notdir $(MANIFEST_OUT)); then \
+			echo "✅ Manifest built successfully."; \
+			rm -f $(notdir $(MANIFEST_TEMPLATE)); \
+		else \
+			echo "❌ Manifest build failed. Cleaning up..."; \
+			rm -f $(notdir $(MANIFEST_OUT)); \
+			exit 1; \
+		fi
 
 $(MANIFEST_OUT).sgx $(MANIFEST_OUT).sig: $(MANIFEST_OUT)
 	@echo "🔐 Signing manifest for SGX mode..."
