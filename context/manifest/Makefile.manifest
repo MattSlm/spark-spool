@@ -1,26 +1,19 @@
-# Makefile for building Gramine Manifest inside a Spark Spool Context
+# context/Makefile.manifest
 
-# Defaults
 SPARK_HOME ?= /opt/spark
 SPARK_SPOOL_CONTEXT_MAINDIR ?= /tmp/spool-contexts
 
-# Context paths
 CONTEXT_DIR := $(SPARK_SPOOL_CONTEXT_MAINDIR)/$(CONTEXT_ID)
 MANIFEST_TEMPLATE := $(CONTEXT_DIR)/template.manifest
 MANIFEST_OUT := $(CONTEXT_DIR)/manifest
 
-# Config files
 SPARK_SPOOL_CONF ?= $(SPARK_HOME)/conf/spool-spark-default.conf
 SPARK_SPOOL_MANIFEST_TEMPLATE ?= $(SPARK_HOME)/conf/spark.manifest.template
 
-# Load Gramine-Spark configuration
+# Load config
 include $(SPARK_SPOOL_CONF)
 
-.PHONY: all
-
-# ========================
-# Manifest Build Rules
-# ========================
+.PHONY: all clean
 
 ifeq ($(MODE),native)
 all:
@@ -32,13 +25,15 @@ all: $(MANIFEST_OUT).sgx $(MANIFEST_OUT).sig
 endif
 endif
 
-# Step 1: Ensure template exists in context
+# Copy template into context
 $(MANIFEST_TEMPLATE):
 	@echo "📋 Copying spark.manifest.template into context $(CONTEXT_ID)..."
 	cp $(SPARK_SPOOL_MANIFEST_TEMPLATE) $(MANIFEST_TEMPLATE)
 
+# Build manifest
 $(MANIFEST_OUT): $(MANIFEST_TEMPLATE)
-	@echo "🔧 Building manifest for context $(CONTEXT_ID)..."
+	@echo "🔧 Forcing clean manifest rebuild for context $(CONTEXT_ID)..."
+	@rm -f $(MANIFEST_OUT)
 	cd $(CONTEXT_DIR) && gramine-manifest \
 		-Darch_libdir=$(spool.arch_libdir) \
 		-Dentrypoint=$(spool.entrypoint) \
@@ -56,17 +51,12 @@ $(MANIFEST_OUT): $(MANIFEST_TEMPLATE)
 		-Dcontext_id=$(CONTEXT_ID) \
 		$(notdir $(MANIFEST_TEMPLATE)) > $(notdir $(MANIFEST_OUT))
 
-# Step 3: Sign manifest for SGX mode
 $(MANIFEST_OUT).sgx $(MANIFEST_OUT).sig: $(MANIFEST_OUT)
 	@echo "🔐 Signing manifest for SGX mode..."
 	cd $(CONTEXT_DIR) && gramine-sgx-sign \
 		--manifest $(notdir $(MANIFEST_OUT)) \
-
-.PHONY: purge_context
-
-purge_context:
-	@echo "🧹 Purging context $(CONTEXT_ID)..."
-	SPARK_HOME=$(SPARK_HOME) \
-	SPARK_SPOOL_CONTEXT_MAINDIR=$(SPARK_SPOOL_CONTEXT_MAINDIR) \
-	bash purge_context.sh $(CONTEXT_ID)
 		--output $(notdir $(MANIFEST_OUT)).sgx
+
+# Clean
+clean:
+	rm -f $(MANIFEST_OUT) $(MANIFEST_OUT).sgx $(MANIFEST_OUT).sig

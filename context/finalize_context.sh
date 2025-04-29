@@ -1,19 +1,23 @@
 #!/bin/bash
 set -euo pipefail
 
-# Usage: ./finalize_context.sh <ContextID> [LogLevel]
+# Usage: ./finalize_context.sh <ContextID>
 
 CONTEXT_ID="${1:?ContextID not provided}"
-LOG_LEVEL="${2:-error}"  # Default log level is 'error' if not provided
 
 # Required variables
-if [ -z "${SPARK_SPOOL_CONTEXT_MAINDIR:-}" ]; then
-    echo "❌ SPARK_SPOOL_CONTEXT_MAINDIR is not set. Please export it."
-    exit 1
-fi
-if [ -z "${SPARK_HOME:-}" ]; then
-    echo "❌ SPARK_HOME is not set. Please export it."
-    exit 1
+SPARK_SPOOL_CONTEXT_MAINDIR="${SPARK_SPOOL_CONTEXT_MAINDIR:?Please export SPARK_SPOOL_CONTEXT_MAINDIR}"
+SPARK_HOME="${SPARK_HOME:-}"
+
+# Fallback SPARK_HOME if not set
+if [ -z "$SPARK_HOME" ]; then
+    if [ -d "/opt/spark" ]; then
+        SPARK_HOME="/opt/spark"
+        echo "⚡ SPARK_HOME not set, defaulting to /opt/spark"
+    else
+        echo "❌ SPARK_HOME not set and /opt/spark not found. Exiting."
+        exit 1
+    fi
 fi
 
 # Paths
@@ -22,89 +26,122 @@ CONF_DIR="$SPARK_HOME/conf/$CONTEXT_ID"
 LOG_DIR="$SPARK_HOME/logs/$CONTEXT_ID"
 TMP_DIR="/scratch/$CONTEXT_ID"
 OUTPUT_DATA_DIR="$CONTEXT_DIR/output_data"
+SPOOL_CONF="$CONF_DIR/spool-spark-default.conf"
 
 # 1. Create necessary directories
 mkdir -p "$CONF_DIR" "$LOG_DIR" "$TMP_DIR" "$OUTPUT_DATA_DIR"
 
-# 2. Reserve a WebUI port safely
-WEBUI_PORT=$(python3 -c '
-import socket
-s = socket.socket()
-s.bind(("", 0))
-port = s.getsockname()[1]
-s.close()
-print(port)
-')
-
-# 3. Copy and patch spark-defaults.conf
-if [ ! -f "$SPARK_HOME/conf/spark-defaults.conf" ]; then
-    echo "❌ spark-defaults.conf missing! Please copy the .template first."
+# 2. Load spool config
+if [ ! -f "$SPOOL_CONF" ]; then
+    echo "❌ spool-spark-default.conf not found for context $CONTEXT_ID!"
     exit 1
 fi
 
-cp "$SPARK_HOME/conf/spark-defaults.conf" "$CONF_DIR/spark-defaults.conf"
+source "$SPOOL_CONF"
 
-{
-  echo ""
-  echo "# Auto-injected by finalize_context.sh"
-  echo "spark.eventLog.enabled false"
-  echo "spark.eventLog.dir file:///dev/null"
-  echo "spark.history.fs.logDirectory file:///dev/null"
-  echo "spark.ui.port $WEBUI_PORT"
-} >> "$CONF_DIR/spark-defaults.conf"
+# 3. Validate critical fields or fallback to defaults
 
-# 4. Copy and patch log4j.properties
-cp "$SPARK_HOME/conf/log4j.properties" "$CONF_DIR/log4j.properties"
-sed -i "s|^log4j.appender.file.File=.*|log4j.appender.file.File=$LOG_DIR/class.log|" "$CONF_DIR/log4j.properties"
+missing_fields=0
 
-# 5. Create safe default spark-env.sh
+check_or_warn() {
+    VAR_NAME="$1"
+    DEFAULT_VAL="$2"
+    if [ -z "${!VAR_NAME:-}" ]; then
+        echo "⚠️ Missing $VAR_NAME. Falling back to default: $DEFAULT_VAL"
+        export "$VAR_NAME"="$DEFAULT_VAL"
+        missing_fields=1
+    fi
+}
+
+# Validate all critical fields
+check_or_warn spool.spark.executor.memory.gb "6"
+check_or_warn spool.spark.executor.memory.overhead.gb "1"
+check_or_warn spool.spark.driver.memory.gb "4"
+check_or_warn spool.spark.driver.memory.overhead.gb "0"
+check_or_warn spool.spark.worker.memory.gb "7"
+check_or_warn spool.spark.worker.cores "2"
+check_or_warn spool.spark.local.dirs "$TMP_DIR"
+check_or_warn spool.spark.log.dir "$LOG_DIR"
+check_or_warn spool.spark.gc.opts "-XX:+UseParallelGC -XX:+UseParallelOldGC"
+check_or_warn spool.spark.daemon.memory "6g"
+check_or_warn spool.spark.daemon.java.opts "-XX:+UseParallelGC -XX:+UseParallelOldGC"
+check_or_warn spool.spark.log.maxfiles "10"
+check_or_warn spool.spark.log.maxsize "100m"
+check_or_warn spool.spark.event_log.enabled "false"
+check_or_warn spool.spark.history_log.enabled "false"
+
+if [ $missing_fields -eq 1 ]; then
+    echo "⚡ Some fields were missing. Defaults were injected. Updated config printed below:"
+fi
+
+# 4. Print effective config for debug
+echo "==== Final Effective Spool Config ===="
+env | grep "^spool\."
+echo "======================================="
+
+# 5. Assemble spark-env.sh
 cat > "$CONF_DIR/spark-env.sh" <<EOF
 #!/usr/bin/env bash
 # Auto-generated spark-env.sh for context $CONTEXT_ID
 
-export SPARK_MASTER_HOST="\${SPARK_MASTER_HOST:-127.0.0.1}"
-export SPARK_MASTER_PORT="\${SPARK_MASTER_PORT:-7077}"
-export SPARK_MASTER_WEBUI_PORT="$WEBUI_PORT"
-export SPARK_LOG_DIR="$LOG_DIR"
-export SPARK_LOCAL_DIRS="$TMP_DIR"
-
-export SPARK_EXECUTOR_MEMORY_GB="\${SPARK_EXECUTOR_MEMORY_GB:-6}"
-export SPARK_EXECUTOR_MEMORY_OVERHEAD_GB="\${SPARK_EXECUTOR_MEMORY_OVERHEAD_GB:-1}"
-export SPARK_WORKER_MEMORY_GB="\${SPARK_WORKER_MEMORY_GB:-7}"
-export SPARK_WORKER_CORES="\${SPARK_WORKER_CORES:-2}"
-export SPARK_DRIVER_MEMORY_GB="\${SPARK_DRIVER_MEMORY_GB:-4}"
-export SPARK_DRIVER_MEMORY_OVERHEAD_GB="\${SPARK_DRIVER_MEMORY_OVERHEAD_GB:-0}"
-
-export SPARK_DAEMON_MEMORY="\${SPARK_DAEMON_MEMORY:-6g}"
-export SPARK_GC_OPTS="\${SPARK_GC_OPTS:--XX:+UseParallelGC -XX:+UseParallelOldGC}"
-export SPARK_DAEMON_JAVA_OPTS="\${SPARK_DAEMON_JAVA_OPTS:--XX:+UseParallelGC -XX:+UseParallelOldGC}"
-
-export SPARK_LOG_LEVEL="\${SPARK_LOG_LEVEL:-$LOG_LEVEL}"
-export SPARK_LOG_MAXFILES="\${SPARK_LOG_MAXFILES:-10}"
-export SPARK_LOG_MAXSIZE="\${SPARK_LOG_MAXSIZE:-100m}"
+export SPARK_EXECUTOR_MEMORY="${spool.spark.executor.memory.gb}g"
+export SPARK_EXECUTOR_MEMORY_OVERHEAD="${spool.spark.executor.memory.overhead.gb}g"
+export SPARK_DRIVER_MEMORY="${spool.spark.driver.memory.gb}g"
+export SPARK_DRIVER_MEMORY_OVERHEAD="${spool.spark.driver.memory.overhead.gb}g"
+export SPARK_WORKER_MEMORY="${spool.spark.worker.memory.gb}g"
+export SPARK_WORKER_CORES="${spool.spark.worker.cores}"
+export SPARK_LOCAL_DIRS="$spool.spark.local.dirs"
+export SPARK_LOG_DIR="$spool.spark.log.dir"
+export SPARK_LOG_MAXFILES="$spool.spark.log.maxfiles"
+export SPARK_LOG_MAXSIZE="$spool.spark.log.maxsize"
+export SPARK_GC_OPTS="$spool.spark.gc.opts"
+export SPARK_DAEMON_MEMORY="$spool.spark.daemon.memory"
+export SPARK_DAEMON_JAVA_OPTS="$spool.spark.daemon.java.opts"
 EOF
 
 chmod +x "$CONF_DIR/spark-env.sh"
 
-# 6. Create empty log files
+# 6. Assemble spark-defaults.conf
+cat > "$CONF_DIR/spark-defaults.conf" <<EOF
+# Auto-generated spark-defaults.conf for context $CONTEXT_ID
+
+spark.executor.memory ${spool.spark.executor.memory.gb}g
+spark.driver.memory ${spool.spark.driver.memory.gb}g
+spark.eventLog.enabled ${spool.spark.event_log.enabled}
+spark.history.fs.logDirectory file:///dev/null
+spark.eventLog.dir file:///dev/null
+spark.local.dir $spool.spark.local.dirs
+EOF
+
+# 7. Assemble log4j.properties
+cat > "$CONF_DIR/log4j.properties" <<EOF
+# Auto-generated log4j.properties for context $CONTEXT_ID
+
+log4j.rootCategory=INFO, file
+log4j.appender.file=org.apache.log4j.RollingFileAppender
+log4j.appender.file.File=$LOG_DIR/class.log
+log4j.appender.file.MaxFileSize=${spool.spark.log.maxsize}
+log4j.appender.file.MaxBackupIndex=${spool.spark.log.maxfiles}
+log4j.appender.file.layout=org.apache.log4j.PatternLayout
+log4j.appender.file.layout.ConversionPattern=%d{yy/MM/dd HH:mm:ss} %p %c{1}: %m%n
+EOF
+
+# 8. Create empty log files
 touch "$LOG_DIR/loader.log" "$LOG_DIR/class.log" "$LOG_DIR/stdout.log" "$LOG_DIR/stderr.log"
 
-# 7. Copy spool-spark-default.conf into LOG_DIR (JVMs may want it inside enclave)
-cp "$SPARK_HOME/conf/spool-spark-default.conf" "$LOG_DIR/spool-spark-default.conf"
+# 9. Copy spool config into logs (optional inside JVM)
+cp "$SPOOL_CONF" "$LOG_DIR/spool-spark-default.conf"
 
-# 8. Save metadata into .spool-env.sh
+# 10. Save context env metadata
 cat >> "$CONTEXT_DIR/.spool-env.sh" <<EOF
 
 # Finalizer injected
-export SPARK_SPOOL_CONTEXT_WEBUI_PORT="$WEBUI_PORT"
-export SPARK_SPOOL_CONTEXT_LOG_LEVEL="$LOG_LEVEL"
 export SPARK_SPOOL_CONTEXT_LOG_FILE="logs/loader.log"
 export SPARK_SPOOL_CONTEXT_SPARK_LOCAL_DIR="$TMP_DIR"
 EOF
 
+# 11. Done
 echo "✅ Finalized context $CONTEXT_ID:"
-echo "   • WebUI port: $WEBUI_PORT"
-echo "   • Log level: $LOG_LEVEL"
-echo "   • SPARK_LOCAL_DIRS: $TMP_DIR"
 echo "   • Conf dir: $CONF_DIR"
 echo "   • Logs dir: $LOG_DIR"
+echo "   • Scratch dir: $TMP_DIR"

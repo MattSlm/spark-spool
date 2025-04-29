@@ -1,0 +1,141 @@
+# context/Makefile.context
+
+SPARK_HOME ?= /opt/spark
+SPARK_SPOOL_CONTEXT_MAINDIR ?= /tmp/spool-contexts
+
+CONTEXT_ID ?=
+SPOOL_CONF_PATH ?=
+MODE ?= direct
+
+CONTEXT_DIR := $(SPARK_SPOOL_CONTEXT_MAINDIR)/$(CONTEXT_ID)
+SPOOL_CONF := $(CONTEXT_DIR)/conf/spool-spark-default.conf
+MANIFEST_DIR := $(dir $(realpath $(lastword $(MAKEFILE_LIST))))/manifest
+
+.PHONY: all create-context finalize-context compile-context create-manifest check-context check-manifest purge-manifest check-env
+
+# ========================
+# Help
+# ========================
+all:
+	@echo "Available targets:"
+	@echo "  make create-context [CONTEXT_ID=x] [SPOOL_CONF_PATH=path]"
+	@echo "  make finalize-context CONTEXT_ID=x"
+	@echo "  make compile-context [CONTEXT_ID=x] [SPOOL_CONF_PATH=path]"
+	@echo "  make create-manifest CONTEXT_ID=x MODE=native/direct/sgx"
+	@echo "  make check-context CONTEXT_ID=x"
+	@echo "  make check-manifest CONTEXT_ID=x"
+	@echo "  make purge-manifest CONTEXT_ID=x"
+	@echo "  make check-env"
+
+# ========================
+# Context Management
+# ========================
+
+create-context:
+	@echo "🛠️ Creating context $(CONTEXT_ID)..."
+	SPARK_SPOOL_CONTEXT_MAINDIR=$(SPARK_SPOOL_CONTEXT_MAINDIR) \
+	SPARK_HOME=$(SPARK_HOME) \
+	bash create_context.sh "$(CONTEXT_ID)" dummy-class
+ifneq ($(SPOOL_CONF_PATH),)
+	@echo "📋 Copying user-provided spool conf: $(SPOOL_CONF_PATH)"
+	@mkdir -p "$(SPARK_HOME)/conf/$(CONTEXT_ID)"
+	cp "$(SPOOL_CONF_PATH)" "$(SPARK_HOME)/conf/$(CONTEXT_ID)/spool-spark-default.conf"
+endif
+	@$(MAKE) check-context CONTEXT_ID=$(CONTEXT_ID) || true
+	@$(MAKE) check-env || true
+
+finalize-context:
+	@echo "🛠️ Finalizing context $(CONTEXT_ID)..."
+	SPARK_SPOOL_CONTEXT_MAINDIR=$(SPARK_SPOOL_CONTEXT_MAINDIR) \
+	SPARK_HOME=$(SPARK_HOME) \
+	bash finalize_context.sh "$(CONTEXT_ID)"
+	@$(MAKE) check-context CONTEXT_ID=$(CONTEXT_ID) || true
+	@$(MAKE) check-env || true
+
+compile-context:
+	@echo "🚀 Compiling full context flow for $(CONTEXT_ID)..."
+	@$(MAKE) create-context CONTEXT_ID=$(CONTEXT_ID) SPOOL_CONF_PATH=$(SPOOL_CONF_PATH)
+	@$(MAKE) finalize-context CONTEXT_ID=$(CONTEXT_ID)
+	@$(MAKE) create-manifest CONTEXT_ID=$(CONTEXT_ID) MODE=$(MODE)
+	@$(MAKE) check-context CONTEXT_ID=$(CONTEXT_ID) || true
+	@$(MAKE) check-manifest CONTEXT_ID=$(CONTEXT_ID) || true
+	@$(MAKE) check-env || true
+	@echo "✅ Context $(CONTEXT_ID) fully compiled and validated."
+
+purge-manifest:
+	@echo "🧹 Purging manifests for context $(CONTEXT_ID)..."
+	$(MAKE) -C $(MANIFEST_DIR) -f Makefile.manifest clean CONTEXT_ID=$(CONTEXT_ID) SPARK_HOME=$(SPARK_HOME)
+
+# ========================
+# Manifest Management
+# ========================
+
+create-manifest:
+	@echo "🔧 Building manifest for context $(CONTEXT_ID) in mode $(MODE)..."
+	$(MAKE) -C $(MANIFEST_DIR) -f Makefile.manifest CONTEXT_ID=$(CONTEXT_ID) MODE=$(MODE) SPARK_HOME=$(SPARK_HOME)
+	@$(MAKE) check-manifest CONTEXT_ID=$(CONTEXT_ID) || true
+
+check-manifest:
+	@echo "🔍 Checking manifest outputs for context $(CONTEXT_ID)..."
+	@if [ ! -f "$(CONTEXT_DIR)/manifest" ]; then \
+		echo "❌ Manifest missing!"; exit 1; \
+	else \
+		echo "✅ Manifest file exists."; \
+	fi
+ifeq ($(MODE),sgx)
+	@if [ ! -f "$(CONTEXT_DIR)/manifest.sgx" ]; then \
+		echo "❌ manifest.sgx missing!"; exit 1; \
+	else \
+		echo "✅ manifest.sgx exists."; \
+	fi
+	@if [ ! -f "$(CONTEXT_DIR)/manifest.sig" ]; then \
+		echo "❌ manifest.sig missing!"; exit 1; \
+	else \
+		echo "✅ manifest.sig exists."; \
+	fi
+endif
+
+# ========================
+# Context Health Check
+# ========================
+
+check-context:
+	@echo "🔍 Checking context $(CONTEXT_ID)..."
+	@if [ ! -d "$(CONTEXT_DIR)" ]; then \
+		echo "❌ Context directory missing: $(CONTEXT_DIR)"; exit 1; \
+	fi
+	@if [ ! -f "$(CONTEXT_DIR)/.spool-env.sh" ]; then \
+		echo "❌ .spool-env.sh missing in context"; \
+	else \
+		echo "✅ .spool-env.sh found."; \
+	fi
+	@if [ ! -f "$(SPOOL_CONF)" ]; then \
+		echo "❌ spool-spark-default.conf missing!"; \
+	else \
+		echo "✅ spool-spark-default.conf found. Current settings:"; \
+		cat "$(SPOOL_CONF)"; \
+	fi
+	@if [ ! -f "$(CONTEXT_DIR)/manifest" ]; then \
+		echo "⚠️ Manifest missing!"; \
+	else \
+		echo "✅ Manifest exists."; \
+	fi
+	@echo "📂 Context directory structure:"
+	tree -L 2 "$(CONTEXT_DIR)" || true
+
+# ========================
+# Environment Health Check
+# ========================
+
+check-env:
+	@echo "🔍 Checking global Spark Spool environment variables..."
+	@if [ -z "$(SPARK_SPOOL_CONTEXT_MAINDIR)" ]; then \
+		echo "⚠️ SPARK_SPOOL_CONTEXT_MAINDIR missing. Will fallback to /tmp/spool-contexts."; \
+	else \
+		echo "✅ SPARK_SPOOL_CONTEXT_MAINDIR = $(SPARK_SPOOL_CONTEXT_MAINDIR)"; \
+	fi
+	@if [ -z "$(SPARK_HOME)" ]; then \
+		echo "⚠️ SPARK_HOME missing. Will fallback to /opt/spark."; \
+	else \
+		echo "✅ SPARK_HOME = $(SPARK_HOME)"; \
+	fi

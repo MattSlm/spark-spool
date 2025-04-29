@@ -1,0 +1,11 @@
+# Minimal Spark defaults
+
+spark.master                     spark://127.0.0.1:7077
+spark.driver.memory              2g
+spark.executor.memory            2g
+spark.local.dir                  /scratch/${CONTEXT_ID}
+spark.eventLog.enabled           false
+spark.history.fs.logDirectory    /tmp/spark-events
+spark.serializer                 org.apache.spark.serializer.KryoSerializer
+spark.driver.extraJavaOptions    -Dlog4j.configuration=log4j.properties
+spark.executor.extraJavaOptions  -Dlog4j.configuration=log4j.properties
