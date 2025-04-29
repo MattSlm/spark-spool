@@ -47,11 +47,11 @@ if [ -n "$USER_SPOOL_CONFIG" ]; then
     echo "⚡ Using user-provided spool config: $USER_SPOOL_CONFIG"
     cp "$USER_SPOOL_CONFIG" "$CONTEXT_CONF_DIR/spool-spark-default.conf"
 else
-    if [ ! -f "$SPARK_HOME/conf/spool/spool-spark-default.conf" ]; then
-        echo "❌ Default spool config not found at $SPARK_HOME/conf/spool/spool-spark-default.conf"
+    if [ ! -f "$SPARK_HOME/conf/spool/spool-spark-default.conf.spool" ]; then
+        echo "❌ Default spool config not found at $SPARK_HOME/conf/spool/spool-spark-default.conf.spool"
         exit 1
     fi
-    cp "$SPARK_HOME/conf/spool/spool-spark-default.conf" "$CONTEXT_CONF_DIR/spool-spark-default.conf"
+    cp "$SPARK_HOME/conf/spool/spool-spark-default.conf.spool" "$CONTEXT_CONF_DIR/spool-spark-default.conf"
     echo "⚡ Using default spool config for context."
 fi
 
