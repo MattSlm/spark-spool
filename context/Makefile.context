@@ -154,7 +154,7 @@ install-default-spool-conf:
 	@echo "🔧 Installing default spool conf files into $(SPARK_HOME)/conf/spool/"
 	@mkdir -p "$(SPARK_HOME)/conf/spool"
 	@for f in $(CONTEXT_ROOT)/../local-conf/*.spool; do \
-		dst="$(SPARK_HOME)/conf/spool/$$(basename $${f} .spool)"; \
+		dst="$(SPARK_HOME)/conf/spool/$$(basename $${f})"; \
 		if [ ! -f "$$dst" ]; then \
 			echo "📋 Copying missing default: $$dst"; \
 			cp "$$f" "$$dst"; \
