@@ -37,7 +37,15 @@ if [ ! -f "$SPOOL_CONF" ]; then
     exit 1
 fi
 
-source "$SPOOL_CONF"
+# Load config into shell vars safely
+while IFS='=' read -r key value; do
+    key=$(echo "$key" | tr -d '[:space:]')
+    value=$(echo "$value" | tr -d '[:space:]')
+    case "$key" in
+        spool.*) export "$key"="$value" ;;
+        *) ;;  # Ignore unprefixed keys
+    esac
+done < "$SPOOL_CONF"
 
 # 3. Validate critical fields or fallback to defaults
 
