@@ -1,0 +1,45 @@
+# Requires CONTEXT_ID and MODE (native/direct/sgx)
+SPARK_SPOOL_CONTEXT_MAINDIR ?= /tmp/spool-contexts
+SPARK_SPOOL_CONF ?= $(SPARK_HOME)/conf/spool-spark-default.conf
+
+CONTEXT_DIR = $(SPARK_SPOOL_CONTEXT_MAINDIR)/$(CONTEXT_ID)
+MANIFEST_TEMPLATE = $(CONTEXT_DIR)/template.manifest
+MANIFEST_OUT = $(CONTEXT_DIR)/manifest
+
+include $(SPARK_SPOOL_CONF)
+
+ifeq ($(MODE),native)
+all:
+	@echo "Skipping manifest creation for native mode."
+else
+all: $(MANIFEST_OUT)
+ifeq ($(MODE),sgx)
+all: $(MANIFEST_OUT).sgx $(MANIFEST_OUT).sig
+endif
+endif
+
+$(MANIFEST_OUT): $(MANIFEST_TEMPLATE)
+	@echo "🔧 Building manifest for context $(CONTEXT_ID)..."
+	gramine-manifest \
+		-Darch_libdir=$(ARCH_LIBDIR) \
+		-Dentrypoint=$(ENTRYPOINT) \
+		-Dloader_log_level=$(spool.loader.log_level) \
+		-Dstack_size=$(spool.stack.size) \
+		-Dbrk_size=$(spool.brk.size) \
+		-Denable_sigterm=$(spool.enable.sigterm) \
+		-Ddisable_aslr=$(spool.disable.aslr) \
+		-Ddisallow_subprocesses=$(spool.disallow.subprocesses) \
+		-Dsgx_enclave_size=4G \
+		-Dsgx_max_threads=$(spool.sgx.max_threads) \
+		-Dsgx_edmm_enable=$(spool.sgx.edmm.enable) \
+		-Dspark_home=$(SPARK_HOME) \
+		-Dcontext_id=$(CONTEXT_ID) \
+		-Dloader_log_file=$(spool.loader.log_file) \
+		$< >$@
+
+$(MANIFEST_OUT).sgx $(MANIFEST_OUT).sig: $(MANIFEST_OUT)
+	@echo "🔐 Signing manifest for SGX mode..."
+	gramine-sgx-sign \
+		--manifest $(MANIFEST_OUT) \
+		--output $(MANIFEST_OUT).sgx
+

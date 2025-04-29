@@ -1,0 +1,52 @@
+# Basic Entry
+libos.entrypoint = "{{ entrypoint }}"
+loader.log_level = "{{ loader_log_level }}"
+loader.log_file = "{{ spark_home }}/logs/{{ context_id }}/loader.log"
+loader.insecure__use_cmdline_argv = true
+loader.insecure__use_host_env = true
+sys.enable_extra_runtime_domain_names_conf = true
+
+# Environment
+loader.env.LD_LIBRARY_PATH = "/lib:{{ arch_libdir }}:/usr/lib:/usr/{{ arch_libdir }}"
+
+# Filesystem
+fs.mounts = [
+  { uri = "file:{{ gramine.runtimedir() }}", path = "/lib" },
+  { uri = "file:{{ arch_libdir }}", path = "{{ arch_libdir }}" },
+  { uri = "file:/usr", path = "/usr" },
+  { type = "tmpfs", path = "/tmp" },
+  { uri = "file:{{ spark_home }}/jars", path = "{{ spark_home }}/jars" },
+  { uri = "file:{{ spark_home }}/conf/{{ context_id }}", path = "{{ spark_home }}/conf/{{ context_id }}" },
+  { uri = "file:{{ spark_home }}/logs/{{ context_id }}", path = "{{ spark_home }}/logs/{{ context_id }}" },
+  { uri = "file:/scratch/{{ context_id }}", path = "/scratch/{{ context_id }}" }
+]
+
+# SGX Settings
+sgx.enclave_size = "{{ sgx_enclave_size }}"
+sgx.max_threads = {{ sgx_max_threads }}
+sgx.edmm_enable = {{ sgx_edmm_enable }}
+sgx.use_exinfo = true
+
+sgx.trusted_files = [
+  "file:{{ entrypoint }}",
+  "file:{{ gramine.runtimedir() }}/",
+  "file:{{ arch_libdir }}/",
+  "file:/usr/{{ arch_libdir }}/",
+  "file:/usr/lib/jvm/java-11-openjdk-amd64/lib/",
+  "file:{{ spark_home }}/conf/{{ context_id }}/",
+  "file:{{ spark_home }}/jars/"
+]
+
+sgx.allowed_files = [
+  "file:{{ spark_home }}/logs/{{ context_id }}/class.log",
+  "file:{{ spark_home }}/logs/{{ context_id }}/loader.log",
+  "file:/scratch/{{ context_id }}/"
+]
+
+# System Settings
+sys.stack.size = "{{ stack_size }}"
+sys.brk.max_size = "{{ brk_size }}"
+sys.fds.limit = {{ fds_limit }}
+sys.enable_sigterm_injection = {{ enable_sigterm }}
+sys.disallow_subprocesses = {{ disallow_subprocesses }}
+loader.insecure__disable_aslr = {{ disable_aslr }}
