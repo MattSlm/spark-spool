@@ -32,7 +32,8 @@ sgx.trusted_files = [
   "file:{{ gramine.runtimedir() }}/",
   "file:{{ arch_libdir }}/",
   "file:/usr/{{ arch_libdir }}/",
-  "file:/usr/lib/jvm/java-11-openjdk-amd64/lib/",
+  "file:{{ entrypoint }}/",
+  "file:/usr/lib/jvm/java-11-openjdk-amd64/conf/security/java.security",
   "file:{{ spark_home }}/conf/{{ context_id }}/",
   "file:{{ spark_home }}/jars/"
 ]
