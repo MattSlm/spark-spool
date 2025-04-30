@@ -19,7 +19,8 @@ fs.mounts = [
   { uri = "file:{{ spark_home }}/examples/jars", path = "{{ spark_home }}/examples/jars" },
   { uri = "file:{{ spark_home }}/conf/{{ context_id }}", path = "{{ spark_home }}/conf/{{ context_id }}" },
   { uri = "file:{{ spark_home }}/logs/{{ context_id }}", path = "{{ spark_home }}/logs/{{ context_id }}" },
-  { uri = "file:/etc", path = "/etc" },
+  { uri = "file:/etc/hosts", path = "/etc/hosts" },
+  { uri = "file:/etc/hostname", path = "/etc/hostname" },
   { uri = "file:/scratch/{{ context_id }}", path = "/scratch/{{ context_id }}" }, 
 ]
 
