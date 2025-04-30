@@ -12,7 +12,7 @@ CONTEXT_DIR := $(SPARK_SPOOL_CONTEXT_MAINDIR)/$(CONTEXT_ID)
 SPOOL_CONF := $(SPARK_HOME)/conf/$(CONTEXT_ID)/spool-spark-default.conf
 MANIFEST_DIR := $(CONTEXT_ROOT)/manifest
 
-HELPER_FILES := $(strip abspath $(strip $(CONTEXT_ROOT)/../local-conf/helper-files)))
+HELPER_FILES := $(strip $(abspath $(strip $(CONTEXT_ROOT)/../local-conf/helper-files)))
 .PHONY: all create-context finalize-context compile-context create-manifest check-context check-manifest purge-manifest check-env install-default-spool-conf
 
 # ========================
