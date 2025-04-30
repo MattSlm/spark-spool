@@ -14,10 +14,6 @@ loader.env.USER = "spark"
 loader.env.LOGNAME = "spark"
 loader.env.HOME = "/home/spark" # optional but helpful
 
-[[fs.mounts]]
-type = "chroot"
-uri = "file:helper-files/fake-passwd"
-path  = "/etc/passwd" 
 
 # Environment
 loader.env.LD_LIBRARY_PATH = "/lib:{{ arch_libdir }}:/usr/lib:/usr/{{ arch_libdir }}"
