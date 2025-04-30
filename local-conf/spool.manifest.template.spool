@@ -19,9 +19,6 @@ type = "chroot"
 uri = "file:helper-files/fake-passwd"
 path  = "/etc/passwd" 
 
-[[sgx.trusted_files]]
-uri = "file:helper-files/fake-passwd"
-
 # Environment
 loader.env.LD_LIBRARY_PATH = "/lib:{{ arch_libdir }}:/usr/lib:/usr/{{ arch_libdir }}"
 
@@ -38,6 +35,7 @@ fs.mounts = [
   { uri = "file:/etc/hosts", path = "/etc/hosts" },
   { uri = "file:/etc/hostname", path = "/etc/hostname" },
   { uri = "file:/scratch/{{ context_id }}", path = "/scratch/{{ context_id }}" }, 
+  { uri = "file:helper-file/fake-passwd", path = "/etc/passwd" },
 ]
 
 # SGX Settings
@@ -57,7 +55,8 @@ sgx.trusted_files = [
   "file:/usr/lib/jvm/java-11-openjdk-amd64/conf/security/java.security",
   "file:{{ spark_home }}/conf/{{ context_id }}/",
   "file:{{ spark_home }}/jars/", 
-  "file:{{ spark_home }}/examples/jars/"
+  "file:{{ spark_home }}/examples/jars/", 
+  "file:helper-files/fake-passwd",
 ]
 
 sgx.allowed_files = [
