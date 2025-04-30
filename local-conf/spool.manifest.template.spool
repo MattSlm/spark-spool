@@ -6,6 +6,10 @@ loader.insecure__use_cmdline_argv = true
 loader.insecure__use_host_env = true
 loader.env.SPARK_LOCAL_IP = "127.0.0.1"
 # sys.enable_extra_runtime_domain_names_conf = true
+loader.env.SPARK_HOME = "{{ spark_home }}"
+loader.env.SPARK_CONF_DIR = "{{ spark_home }}/conf/{{ context_id }}"
+
+
 
 # User Mimic for hadoop
 loader.uid = 1000
@@ -68,3 +72,8 @@ sys.fds.limit = {{ fds_limit }}
 sys.enable_sigterm_injection = {{ enable_sigterm }}
 sys.disallow_subprocesses = {{ disallow_subprocesses }}
 loader.insecure__disable_aslr = {{ disable_aslr }}
+
+sys.allowed_ioctls = [
+  { request_code = 0x8912 }, # SIOCGIFCONF
+  { request_code = 0x8927 }  # SIOCGIFHWADDR
+]
