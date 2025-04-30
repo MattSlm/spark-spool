@@ -70,8 +70,12 @@ purge-manifest:
 
 create-manifest: copy-helper-files install-default-spool-conf
 	    @echo "🔧 Building manifest for context $(CONTEXT_ID) in mode $(MODE)..."
-	    $(MAKE) -C $(MANIFEST_DIR) -f Makefile.manifest CONTEXT_ID=$(CONTEXT_ID) MODE=$(MODE) SPARK_HOME=$(SPARK_HOME)
-	    @$(MAKE) -f $(CONTEXT_ROOT)/Makefile.context check-manifest CONTEXT_ID=$(CONTEXT_ID)
+	    	@if ! $(MAKE) -C $(MANIFEST_DIR) -f Makefile.manifest CONTEXT_ID=$(CONTEXT_ID) MODE=$(MODE) SPARK_HOME=$(SPARK_HOME); then \
+		echo "❌ Manifest build failed. Cleaning up template and manifest..."; \
+		rm -f "$(CONTEXT_DIR)/java.manifest" "$(CONTEXT_DIR)/java.manifest.template"; \
+		exit 1; \
+	fi
+		@$(MAKE) -f $(CONTEXT_ROOT)/Makefile.context check-manifest CONTEXT_ID=$(CONTEXT_ID)
 
 check-manifest:
 	    @echo "🔍 Checking manifest outputs for context $(CONTEXT_ID)..."
