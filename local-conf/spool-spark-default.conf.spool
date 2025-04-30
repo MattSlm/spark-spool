@@ -25,9 +25,9 @@ spool.spark.master.port=7077
 spool.spark.local.dirs=$SPARK_HOME/scratch/${CONTEXT_ID}
 spool.spark.log.dir=$SPARK_HOME/logs/${CONTEXT_ID}
 spool.spark.log.maxfiles=10
-spool.spark.log.maxsize=100m
+spool.spark.log.maxsize=100M
 spool.spark.gc.opts=-XX:+UseParallelGC -XX:+UseParallelOldGC
-spool.spark.daemon.memory=6g
+spool.spark.daemon.memory=6G
 spool.spark.daemon.java.opts=-XX:+UseParallelGC -XX:+UseParallelOldGC
 
 # ========== Logging and History Behavior ==========
