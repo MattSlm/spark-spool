@@ -4,7 +4,7 @@ loader.log_level = "{{ loader_log_level }}"
 loader.log_file = "{{ spark_home }}/logs/{{ context_id }}/loader.log"
 loader.insecure__use_cmdline_argv = true
 loader.insecure__use_host_env = true
-sys.enable_extra_runtime_domain_names_conf = true
+# sys.enable_extra_runtime_domain_names_conf = true
 
 # Environment
 loader.env.LD_LIBRARY_PATH = "/lib:{{ arch_libdir }}:/usr/lib:/usr/{{ arch_libdir }}"
@@ -19,7 +19,8 @@ fs.mounts = [
   { uri = "file:{{ spark_home }}/examples/jars", path = "{{ spark_home }}/examples/jars" },
   { uri = "file:{{ spark_home }}/conf/{{ context_id }}", path = "{{ spark_home }}/conf/{{ context_id }}" },
   { uri = "file:{{ spark_home }}/logs/{{ context_id }}", path = "{{ spark_home }}/logs/{{ context_id }}" },
-  { uri = "file:/scratch/{{ context_id }}", path = "/scratch/{{ context_id }}" }
+  { uri = "file:/etc", path = "/etc" },
+  { uri = "file:/scratch/{{ context_id }}", path = "/scratch/{{ context_id }}" }, 
 ]
 
 # SGX Settings
@@ -34,6 +35,8 @@ sgx.trusted_files = [
   "file:{{ arch_libdir }}/",
   "file:/usr/{{ arch_libdir }}/",
   "file:/usr/lib/jvm/java-11-openjdk-amd64/lib/",
+  "file:/etc/hostname", 
+  "file:/etc/hosts",
   "file:/usr/lib/jvm/java-11-openjdk-amd64/conf/security/java.security",
   "file:{{ spark_home }}/conf/{{ context_id }}/",
   "file:{{ spark_home }}/jars/", 
