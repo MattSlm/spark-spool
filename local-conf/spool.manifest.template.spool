@@ -4,6 +4,7 @@ loader.log_level = "{{ loader_log_level }}"
 loader.log_file = "{{ spark_home }}/logs/{{ context_id }}/loader.log"
 loader.insecure__use_cmdline_argv = true
 loader.insecure__use_host_env = true
+loader.env.SPARK_LOCAL_IP = "127.0.0.1"
 # sys.enable_extra_runtime_domain_names_conf = true
 
 # Environment
