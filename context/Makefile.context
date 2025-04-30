@@ -12,6 +12,7 @@ CONTEXT_DIR := $(SPARK_SPOOL_CONTEXT_MAINDIR)/$(CONTEXT_ID)
 SPOOL_CONF := $(SPARK_HOME)/conf/$(CONTEXT_ID)/spool-spark-default.conf
 MANIFEST_DIR := $(CONTEXT_ROOT)/manifest
 
+HELPER_FILES := $(CONTEXT_ROOT)/../local-conf/helper-files 
 .PHONY: all create-context finalize-context compile-context create-manifest check-context check-manifest purge-manifest check-env install-default-spool-conf
 
 # ========================
@@ -67,7 +68,7 @@ purge-manifest:
 # Manifest Management
 # ========================
 
-create-manifest: install-default-spool-conf
+create-manifest: copy-helper-files idnstall-default-spool-conf
 	@echo "🔧 Building manifest for context $(CONTEXT_ID) in mode $(MODE)..."
 	$(MAKE) -C $(MANIFEST_DIR) -f Makefile.manifest CONTEXT_ID=$(CONTEXT_ID) MODE=$(MODE) SPARK_HOME=$(SPARK_HOME)
 	@$(MAKE) -f $(CONTEXT_ROOT)/Makefile.context check-manifest CONTEXT_ID=$(CONTEXT_ID)
@@ -153,3 +154,17 @@ install-default-spool-conf:
 		echo "📋 Overwriting: $$dst"; \
 		cp "$$f" "$$dst"; \
 	done
+
+copy-helper-files:
+	@echo "📂 Syncing helper-files into context $(CONTEXT_ID)..."
+	@mkdir -p "$(CONTEXT_DIR)/helper-files"
+	@for f in ($HELPER_FILES)/*; do \
+		dst="$(CONTEXT_DIR)/helper-files/$$(basename $$f)"; \
+		if [ -f "$$dst" ]; then \
+			echo "🗑️  Removing old helper file: $$dst"; \
+			rm -f "$$dst"; \
+		fi; \
+		echo "📋 Copying $$f to $$dst"; \
+		cp "$$f" "$$dst"; \
+	done
+
