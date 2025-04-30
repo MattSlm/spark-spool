@@ -22,8 +22,8 @@ spool.spark.worker.memory.gb=7
 spool.spark.worker.cores=2
 spool.spark.master.port=7077
 # spool.spark.master.webui.port will be dynamically allocated if missing
-spool.spark.local.dirs=/scratch/\${CONTEXT_ID}
-spool.spark.log.dir=logs/\${CONTEXT_ID}
+spool.spark.local.dirs=$SPARK_HOME/scratch/${CONTEXT_ID}
+spool.spark.log.dir=$SPARK_HOME/logs/${CONTEXT_ID}
 spool.spark.log.maxfiles=10
 spool.spark.log.maxsize=100m
 spool.spark.gc.opts=-XX:+UseParallelGC -XX:+UseParallelOldGC

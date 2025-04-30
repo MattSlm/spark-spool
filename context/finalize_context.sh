@@ -80,11 +80,16 @@ if [ $missing_fields -eq 1 ]; then
     echo "⚡ Some fields were missing. Updated and will overwrite config."
 fi
 
+# Manually enforce key paths
+conf_map["spool.spark.log.dir"]="$LOG_DIR"
+conf_map["spool.spark.local.dirs"]="$TMP_DIR"
+
 # 4. Save corrected config back
 {
   for key in "${!conf_map[@]}"; do
     echo "$key=${conf_map[$key]}"
   done
+  # Interpolate ${CONTEXT_ID} in values
 } > "$CONF_DIR/spool-spark-default.conf"
 
 # 5. Print effective config for debug
