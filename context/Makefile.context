@@ -68,7 +68,7 @@ purge-manifest:
 # Manifest Management
 # ========================
 
-create-manifest: copy-helper-files idnstall-default-spool-conf
+create-manifest: copy-helper-files install-default-spool-conf
 	@echo "🔧 Building manifest for context $(CONTEXT_ID) in mode $(MODE)..."
 	$(MAKE) -C $(MANIFEST_DIR) -f Makefile.manifest CONTEXT_ID=$(CONTEXT_ID) MODE=$(MODE) SPARK_HOME=$(SPARK_HOME)
 	@$(MAKE) -f $(CONTEXT_ROOT)/Makefile.context check-manifest CONTEXT_ID=$(CONTEXT_ID)
@@ -158,7 +158,7 @@ install-default-spool-conf:
 copy-helper-files:
 	@echo "📂 Syncing helper-files into context $(CONTEXT_ID)..."
 	@mkdir -p "$(CONTEXT_DIR)/helper-files"
-	@for f in ($HELPER_FILES)/*; do \
+	@for f in $(HELPER_FILES)/*; do \
 		dst="$(CONTEXT_DIR)/helper-files/$$(basename $$f)"; \
 		if [ -f "$$dst" ]; then \
 			echo "🗑️  Removing old helper file: $$dst"; \
