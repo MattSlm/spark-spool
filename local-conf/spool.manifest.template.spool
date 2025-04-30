@@ -7,6 +7,14 @@ loader.insecure__use_host_env = true
 loader.env.SPARK_LOCAL_IP = "127.0.0.1"
 # sys.enable_extra_runtime_domain_names_conf = true
 
+# User Mimic for hadoop
+loader.uid = 1000
+loader.gid = 1000
+loader.env.USER = "spark"
+loader.env.LOGNAME = "spark"
+loader.env.HOME = "/home/spark" # optional but helpful
+
+
 # Environment
 loader.env.LD_LIBRARY_PATH = "/lib:{{ arch_libdir }}:/usr/lib:/usr/{{ arch_libdir }}"
 
