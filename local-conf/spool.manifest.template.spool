@@ -16,6 +16,7 @@ fs.mounts = [
   { uri = "file:/usr", path = "/usr" },
   { type = "tmpfs", path = "/tmp" },
   { uri = "file:{{ spark_home }}/jars", path = "{{ spark_home }}/jars" },
+  { uri = "file:{{ spark_home }}/examples/jars", path = "{{ spark_home }}/examples/jars" },
   { uri = "file:{{ spark_home }}/conf/{{ context_id }}", path = "{{ spark_home }}/conf/{{ context_id }}" },
   { uri = "file:{{ spark_home }}/logs/{{ context_id }}", path = "{{ spark_home }}/logs/{{ context_id }}" },
   { uri = "file:/scratch/{{ context_id }}", path = "/scratch/{{ context_id }}" }
@@ -35,7 +36,8 @@ sgx.trusted_files = [
   "file:/usr/lib/jvm/java-11-openjdk-amd64/lib/",
   "file:/usr/lib/jvm/java-11-openjdk-amd64/conf/security/java.security",
   "file:{{ spark_home }}/conf/{{ context_id }}/",
-  "file:{{ spark_home }}/jars/"
+  "file:{{ spark_home }}/jars/", 
+  "file:{{ spark_home }}/examples/jars/
 ]
 
 sgx.allowed_files = [
