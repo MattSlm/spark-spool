@@ -9,3 +9,9 @@ spark.history.fs.logDirectory    /tmp/spark-events
 spark.serializer                 org.apache.spark.serializer.KryoSerializer
 spark.driver.extraJavaOptions    -Dlog4j.configuration=log4j.properties
 spark.executor.extraJavaOptions  -Dlog4j.configuration=log4j.properties
+spark.cleaner.referenceTracking.cleanCheckpoints    false
+spark.cleaner.referenceTracking.blocking            false
+spark.cleaner.periodicGC.interval                   0
+spark.worker.cleanup.enabled                        false
+spark.worker.cleanup.enabled false
+
